@@ -24,7 +24,30 @@
     </div>
 
     <div class="above-game">
+      <a class="leaderboard-button">Leaderboard</a>
       <a class="restart-button">New Game</a>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>TOP PLAYERS</h2>
+        <ul id="leaderboard-list">
+          <li>Loading...</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Username Modal -->
+    <div id="username-modal" class="modal" style="display: block;">
+      <div class="modal-content">
+        <h2>ENTER USERNAME</h2>
+        <p>Enter a unique username to play.</p>
+        <input type="text" id="username-input" placeholder="Username" maxlength="15">
+        <button id="start-game-button" class="leaderboard-button" style="margin-top: 20px;">START GAME</button>
+        <p id="login-error" style="color: var(--neon-pink); margin-top: 10px;"></p>
+      </div>
     </div>
 
     <div class="game-container">

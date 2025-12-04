@@ -1,30 +1,119 @@
 import { db } from "./firebase";
-import { collection, getDocs, query, orderBy, limit, addDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 export class Leaderboard {
-    constructor() {
+    constructor(gameInstance) {
+        this.game = gameInstance;
         this.modal = document.getElementById("leaderboard-modal");
+        this.usernameModal = document.getElementById("username-modal");
         this.btn = document.querySelector(".leaderboard-button");
         this.span = document.querySelector(".close-button");
         this.list = document.getElementById("leaderboard-list");
+
+        this.usernameInput = document.getElementById("username-input");
+        this.startGameBtn = document.getElementById("start-game-button");
+        this.loginError = document.getElementById("login-error");
+
+        this.currentUser = null;
+        this.useMock = true; // Set to true for offline testing
 
         this.bindEvents();
     }
 
     bindEvents() {
-        this.btn.onclick = () => {
-            this.open();
-        };
-
-        this.span.onclick = () => {
-            this.close();
-        };
-
+        this.btn.onclick = () => this.open();
+        this.span.onclick = () => this.close();
         window.onclick = (event) => {
-            if (event.target == this.modal) {
-                this.close();
-            }
+            if (event.target == this.modal) this.close();
         };
+
+        this.startGameBtn.onclick = () => this.handleLogin();
+
+        // Allow Enter key to submit username
+        this.usernameInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") this.handleLogin();
+        });
+    }
+
+    async handleLogin() {
+        const username = this.usernameInput.value.trim().toLowerCase();
+        if (!username) {
+            this.loginError.textContent = "Please enter a username.";
+            return;
+        }
+
+        if (username.length < 3) {
+            this.loginError.textContent = "Username must be at least 3 characters.";
+            return;
+        }
+
+        this.startGameBtn.disabled = true;
+        this.startGameBtn.textContent = "CHECKING...";
+        this.loginError.textContent = "";
+
+        if (this.useMock) {
+            this.mockLogin(username);
+            return;
+        }
+
+        try {
+            const userRef = doc(db, "players", username);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                this.currentUser = userSnap.data();
+                console.log("Welcome back, " + this.currentUser.username);
+            } else {
+                // Create new user
+                const newUser = {
+                    username: username,
+                    bestScore: 0,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+                await setDoc(userRef, newUser);
+                this.currentUser = newUser;
+                console.log("New user created: " + username);
+            }
+
+            this.completeLogin();
+
+        } catch (error) {
+            console.error("Login error:", error);
+            this.loginError.textContent = "Error: " + error.message + " (Switching to offline mode)";
+            // Fallback to mock if online fails
+            this.useMock = true;
+            this.mockLogin(username);
+        }
+    }
+
+    mockLogin(username) {
+        console.log("Mock login for: " + username);
+        // Simulate network delay
+        setTimeout(() => {
+            let storedUser = localStorage.getItem("mock_user_" + username);
+            if (storedUser) {
+                this.currentUser = JSON.parse(storedUser);
+            } else {
+                this.currentUser = {
+                    username: username,
+                    bestScore: 0,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+                localStorage.setItem("mock_user_" + username, JSON.stringify(this.currentUser));
+            }
+            this.completeLogin();
+        }, 500);
+    }
+
+    completeLogin() {
+        this.usernameModal.style.display = "none";
+        if (this.game) {
+            this.game.setup(this.currentUser ? this.currentUser.bestScore : 0);
+        } else {
+            alert("Game instance is missing!");
+        }
     }
 
     async open() {
@@ -39,45 +128,76 @@ export class Leaderboard {
     async fetchScores() {
         this.list.innerHTML = "<li>Loading...</li>";
 
+        if (this.useMock) {
+            this.mockFetchScores();
+            return;
+        }
+
         try {
-            const q = query(collection(db, "scores"), orderBy("score", "desc"), limit(10));
+            const q = query(collection(db, "players"), orderBy("bestScore", "desc"), limit(10));
             const querySnapshot = await getDocs(q);
-
-            this.list.innerHTML = "";
-
-            if (querySnapshot.empty) {
-                this.list.innerHTML = "<li>No scores yet!</li>";
-                return;
-            }
-
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                const li = document.createElement("li");
-                li.innerHTML = `<span>${data.name || "Anonymous"}</span> <span>${data.score}</span>`;
-                this.list.appendChild(li);
-            });
+            this.renderScores(querySnapshot.docs.map(d => d.data()));
         } catch (error) {
             console.error("Error fetching scores:", error);
-            this.list.innerHTML = "<li>Error loading scores</li>";
+            this.list.innerHTML = "<li>Error loading scores.</li>";
         }
     }
 
-    async submitScore(score) {
-        if (score <= 0) return;
+    mockFetchScores() {
+        setTimeout(() => {
+            // Get all mock users from local storage
+            const scores = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith("mock_user_")) {
+                    scores.push(JSON.parse(localStorage.getItem(key)));
+                }
+            }
+            // Sort by best score
+            scores.sort((a, b) => b.bestScore - a.bestScore);
+            this.renderScores(scores.slice(0, 10));
+        }, 500);
+    }
 
-        const name = prompt("New High Score! Enter your name:", "Player");
-        if (!name) return;
+    renderScores(dataList) {
+        this.list.innerHTML = "";
+        if (dataList.length === 0) {
+            this.list.innerHTML = "<li>No scores yet!</li>";
+            return;
+        }
+
+        dataList.forEach((data) => {
+            const li = document.createElement("li");
+            // Highlight current user
+            if (this.currentUser && data.username === this.currentUser.username) {
+                li.style.borderColor = "var(--neon-green)";
+                li.style.color = "var(--neon-green)";
+                li.style.boxShadow = "inset 0 0 10px rgba(0, 255, 0, 0.2)";
+            }
+            li.innerHTML = `<span>${data.username}</span> <span>${data.bestScore}</span>`;
+            this.list.appendChild(li);
+        });
+    }
+
+    async submitScore(score) {
+        if (!this.currentUser || score <= this.currentUser.bestScore) return;
+
+        console.log(`New personal best: ${score}`);
+        this.currentUser.bestScore = score;
+
+        if (this.useMock) {
+            localStorage.setItem("mock_user_" + this.currentUser.username, JSON.stringify(this.currentUser));
+            return;
+        }
 
         try {
-            await addDoc(collection(db, "scores"), {
-                name: name,
-                score: score,
-                date: new Date()
+            const userRef = doc(db, "players", this.currentUser.username);
+            await updateDoc(userRef, {
+                bestScore: score,
+                updatedAt: serverTimestamp()
             });
-            alert("Score submitted!");
         } catch (error) {
-            console.error("Error adding score: ", error);
-            alert("Failed to submit score.");
+            console.error("Error updating score: ", error);
         }
     }
 }

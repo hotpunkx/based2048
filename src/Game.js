@@ -15,7 +15,7 @@ export class Game {
         this.inputManager.on("restart", this.restart.bind(this));
         this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
 
-        this.setup();
+        // this.setup(); // Game setup is now called manually after login
     }
 
     restart() {
@@ -33,12 +33,21 @@ export class Game {
         return this.over || (this.won && !this.keepPlaying);
     }
 
-    setup() {
+    setup(savedBestScore) {
         this.grid = new Grid(this.size);
         this.score = 0;
         this.over = false;
         this.won = false;
         this.keepPlaying = false;
+
+        // Initialize bestScore if provided
+        if (savedBestScore !== undefined) {
+            this.bestScore = savedBestScore;
+        }
+        // Ensure bestScore is at least 0
+        if (this.bestScore === undefined) {
+            this.bestScore = 0;
+        }
 
         // Add the initial tiles
         this.addStartTiles();
@@ -63,11 +72,16 @@ export class Game {
     }
 
     actuate() {
+        // Update best score dynamically
+        if (this.score > this.bestScore) {
+            this.bestScore = this.score;
+        }
+
         this.actuator.actuate(this.grid, {
             score: this.score,
             over: this.over,
             won: this.won,
-            bestScore: 0, // TODO: Implement local storage for best score
+            bestScore: this.bestScore,
             terminated: this.isGameTerminated()
         });
 

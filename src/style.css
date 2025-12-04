@@ -646,3 +646,22 @@ body {
   border-color: #cd7f32;
   color: #cd7f32;
 }
+/* Username Input Styles */
+#username-input {
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--neon-cyan);
+  color: var(--neon-yellow);
+  padding: 10px;
+  font-family: var(--font-main);
+  font-size: 18px;
+  border-radius: var(--border-radius);
+  width: 80%;
+  text-align: center;
+  outline: none;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+#username-input:focus {
+  box-shadow: 0 0 20px var(--neon-cyan);
+}
+

@@ -7,7 +7,7 @@ import { Leaderboard } from './Leaderboard.js'
 // Wait for the DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", () => {
   window.requestAnimationFrame(() => {
-    new Game(4, InputManager, Actuator);
-    window.leaderboard = new Leaderboard();
+    const game = new Game(4, InputManager, Actuator);
+    window.leaderboard = new Leaderboard(game);
   });
 });
