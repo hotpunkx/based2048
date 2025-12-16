@@ -17,6 +17,7 @@ export class InputManager {
     }
 
     on(event, callback) {
+        if (typeof event !== 'string') return;
         if (!this.events[event]) {
             this.events[event] = [];
         }

@@ -62,7 +62,7 @@ export class Leaderboard {
 
             if (userSnap.exists()) {
                 this.currentUser = userSnap.data();
-                console.log("Welcome back, " + this.sanitizeLog(this.currentUser.username));
+                this.currentUser = userSnap.data();
             } else {
                 // Create new user
                 const newUser = {
@@ -73,13 +73,13 @@ export class Leaderboard {
                 };
                 await setDoc(userRef, newUser);
                 this.currentUser = newUser;
-                console.log("New user created: " + this.sanitizeLog(username));
+                this.currentUser = newUser;
             }
 
             this.completeLogin();
 
         } catch (error) {
-            console.error("Login error:", error.message);
+            console.error("Login failed");
             this.loginError.textContent = "Error: " + error.message + " (Switching to offline mode)";
             // Fallback to mock if online fails
             this.useMock = true;
@@ -88,7 +88,6 @@ export class Leaderboard {
     }
 
     mockLogin(username) {
-        console.log("Mock login for: " + this.sanitizeLog(username));
         // Simulate network delay
         setTimeout(() => {
             let storedUser = localStorage.getItem("mock_user_" + username);
@@ -141,7 +140,7 @@ export class Leaderboard {
             const querySnapshot = await getDocs(q);
             this.renderScores(querySnapshot.docs.map(d => d.data()));
         } catch (error) {
-            console.error("Error fetching scores:", error.message);
+            console.error("Fetch failed");
             this.list.textContent = "";
             const li = document.createElement("li");
             li.textContent = "Error loading scores.";
@@ -200,7 +199,6 @@ export class Leaderboard {
     async submitScore(score) {
         if (!this.currentUser || score <= this.currentUser.bestScore) return;
 
-        console.log(`New personal best: ${score}`);
         this.currentUser.bestScore = score;
 
         if (this.useMock) {
@@ -215,7 +213,7 @@ export class Leaderboard {
                 updatedAt: serverTimestamp()
             });
         } catch (error) {
-            console.error("Error updating score: ", error.message);
+            console.error("Update failed");
         }
     }
 

@@ -16,20 +16,16 @@ export class Grid {
     empty() {
         const cells = [];
         for (let x = 0; x < this.size; x++) {
-            const row = cells[x] = [];
+            const row = [];
             for (let y = 0; y < this.size; y++) {
                 row.push(null);
             }
+            cells.push(row);
         }
         return cells;
     }
 
-    randomEmptyCell() {
-        const cells = this.availableCells();
-        if (cells.length) {
-            return cells[Math.floor(Math.random() * cells.length)];
-        }
-    }
+
 
     availableCells() {
         const cells = [];
