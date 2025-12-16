@@ -1,6 +1,6 @@
 export class InputManager {
     constructor() {
-        this.events = {};
+        this.events = Object.create(null);
 
         if (window.navigator.msPointerEnabled) {
             //Internet Explorer 10 style

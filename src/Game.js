@@ -2,6 +2,7 @@ import { Grid } from './Grid.js';
 import { Tile } from './Tile.js';
 import { InputManager } from './InputManager.js';
 import { Actuator } from './Actuator.js';
+import { secureRandom } from './cryptoUtils.js';
 
 export class Game {
     constructor(size, InputManager, Actuator) {
@@ -64,7 +65,7 @@ export class Game {
 
     addRandomTile() {
         if (this.grid.cellsAvailable()) {
-            const value = Math.random() < 0.9 ? 2 : 4;
+            const value = secureRandom() < 0.9 ? 2 : 4;
             const tile = new Tile(this.grid.randomEmptyCell(), value);
 
             this.grid.insertTile(tile);
@@ -106,9 +107,9 @@ export class Game {
     }
 
     moveTile(tile, cell) {
-        this.grid.cells[tile.x][tile.y] = null;
-        this.grid.cells[cell.x][cell.y] = tile;
+        this.grid.removeTile(tile);
         tile.updatePosition(cell);
+        this.grid.insertTile(tile);
     }
 
     move(direction) {

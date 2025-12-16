@@ -1,7 +1,16 @@
+import { secureRandom } from './cryptoUtils.js';
+
 export class Grid {
     constructor(size) {
         this.size = size;
         this.cells = this.empty();
+    }
+    // ...
+    randomEmptyCell() {
+        const cells = this.availableCells();
+        if (cells.length) {
+            return cells[Math.floor(secureRandom() * cells.length)];
+        }
     }
 
     empty() {
@@ -61,10 +70,12 @@ export class Grid {
     }
 
     insertTile(tile) {
+        if (typeof tile.x !== 'number' || typeof tile.y !== 'number') return;
         this.cells[tile.x][tile.y] = tile;
     }
 
     removeTile(tile) {
+        if (typeof tile.x !== 'number' || typeof tile.y !== 'number') return;
         this.cells[tile.x][tile.y] = null;
     }
 

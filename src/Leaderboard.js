@@ -24,7 +24,7 @@ export class Leaderboard {
         this.btn.onclick = () => this.open();
         this.span.onclick = () => this.close();
         window.onclick = (event) => {
-            if (event.target == this.modal) this.close();
+            if (event.target === this.modal) this.close();
         };
 
         this.startGameBtn.onclick = () => this.handleLogin();
@@ -62,7 +62,7 @@ export class Leaderboard {
 
             if (userSnap.exists()) {
                 this.currentUser = userSnap.data();
-                console.log("Welcome back, " + this.currentUser.username);
+                console.log("Welcome back, " + this.sanitizeLog(this.currentUser.username));
             } else {
                 // Create new user
                 const newUser = {
@@ -73,13 +73,13 @@ export class Leaderboard {
                 };
                 await setDoc(userRef, newUser);
                 this.currentUser = newUser;
-                console.log("New user created: " + username);
+                console.log("New user created: " + this.sanitizeLog(username));
             }
 
             this.completeLogin();
 
         } catch (error) {
-            console.error("Login error:", error);
+            console.error("Login error:", error.message);
             this.loginError.textContent = "Error: " + error.message + " (Switching to offline mode)";
             // Fallback to mock if online fails
             this.useMock = true;
@@ -88,7 +88,7 @@ export class Leaderboard {
     }
 
     mockLogin(username) {
-        console.log("Mock login for: " + username);
+        console.log("Mock login for: " + this.sanitizeLog(username));
         // Simulate network delay
         setTimeout(() => {
             let storedUser = localStorage.getItem("mock_user_" + username);
@@ -126,7 +126,10 @@ export class Leaderboard {
     }
 
     async fetchScores() {
-        this.list.innerHTML = "<li>Loading...</li>";
+        this.list.innerHTML = "";
+        const li = document.createElement("li");
+        li.textContent = "Loading...";
+        this.list.appendChild(li);
 
         if (this.useMock) {
             this.mockFetchScores();
@@ -138,8 +141,11 @@ export class Leaderboard {
             const querySnapshot = await getDocs(q);
             this.renderScores(querySnapshot.docs.map(d => d.data()));
         } catch (error) {
-            console.error("Error fetching scores:", error);
-            this.list.innerHTML = "<li>Error loading scores.</li>";
+            console.error("Error fetching scores:", error.message);
+            this.list.innerHTML = "";
+            const li = document.createElement("li");
+            li.textContent = "Error loading scores.";
+            this.list.appendChild(li);
         }
     }
 
@@ -162,7 +168,9 @@ export class Leaderboard {
     renderScores(dataList) {
         this.list.innerHTML = "";
         if (dataList.length === 0) {
-            this.list.innerHTML = "<li>No scores yet!</li>";
+            const li = document.createElement("li");
+            li.textContent = "No scores yet!";
+            this.list.appendChild(li);
             return;
         }
 
@@ -174,7 +182,17 @@ export class Leaderboard {
                 li.style.color = "var(--neon-green)";
                 li.style.boxShadow = "inset 0 0 10px rgba(0, 255, 0, 0.2)";
             }
-            li.innerHTML = `<span>${data.username}</span> <span>${data.bestScore}</span>`;
+
+            const nameSpan = document.createElement("span");
+            nameSpan.textContent = data.username;
+
+            const scoreSpan = document.createElement("span");
+            scoreSpan.textContent = data.bestScore;
+
+            li.appendChild(nameSpan);
+            li.appendChild(document.createTextNode(" "));
+            li.appendChild(scoreSpan);
+
             this.list.appendChild(li);
         });
     }
@@ -197,7 +215,12 @@ export class Leaderboard {
                 updatedAt: serverTimestamp()
             });
         } catch (error) {
-            console.error("Error updating score: ", error);
+            console.error("Error updating score: ", error.message);
         }
+    }
+
+    sanitizeLog(input) {
+        if (typeof input !== 'string') return input;
+        return input.replace(/[\n\r]/g, ' ').slice(0, 100);
     }
 }
