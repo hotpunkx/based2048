@@ -66,12 +66,12 @@ export class Grid {
     }
 
     insertTile(tile) {
-        if (typeof tile.x !== 'number' || typeof tile.y !== 'number') return;
+        if (!this.withinBounds(tile)) return;
         this.cells[tile.x][tile.y] = tile;
     }
 
     removeTile(tile) {
-        if (typeof tile.x !== 'number' || typeof tile.y !== 'number') return;
+        if (!this.withinBounds(tile)) return;
         this.cells[tile.x][tile.y] = null;
     }
 

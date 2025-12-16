@@ -1,6 +1,6 @@
 export class InputManager {
     constructor() {
-        this.events = Object.create(null);
+        this.events = new Map();
 
         if (window.navigator.msPointerEnabled) {
             //Internet Explorer 10 style
@@ -18,14 +18,14 @@ export class InputManager {
 
     on(event, callback) {
         if (typeof event !== 'string') return;
-        if (!this.events[event]) {
-            this.events[event] = [];
+        if (!this.events.has(event)) {
+            this.events.set(event, []);
         }
-        this.events[event].push(callback);
+        this.events.get(event).push(callback);
     }
 
     emit(event, data) {
-        const callbacks = this.events[event];
+        const callbacks = this.events.get(event);
         if (callbacks) {
             callbacks.forEach(callback => {
                 callback(data);
