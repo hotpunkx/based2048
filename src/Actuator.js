@@ -55,7 +55,7 @@ export class Actuator {
         if (tile.previousPosition) {
             // Make sure that the tile gets rendered in the previous position first
             window.requestAnimationFrame(() => {
-                classes[2] = this.positionClass({ x: tile.x, y: tile.y });
+                classes.splice(2, 1, this.positionClass({ x: tile.x, y: tile.y }));
                 this.applyClasses(wrapper, classes); // Update the position
             });
         } else if (tile.mergedFrom) {

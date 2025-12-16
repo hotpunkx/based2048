@@ -126,7 +126,7 @@ export class Leaderboard {
     }
 
     async fetchScores() {
-        this.list.innerHTML = "";
+        this.list.textContent = "";
         const li = document.createElement("li");
         li.textContent = "Loading...";
         this.list.appendChild(li);
@@ -142,7 +142,7 @@ export class Leaderboard {
             this.renderScores(querySnapshot.docs.map(d => d.data()));
         } catch (error) {
             console.error("Error fetching scores:", error.message);
-            this.list.innerHTML = "";
+            this.list.textContent = "";
             const li = document.createElement("li");
             li.textContent = "Error loading scores.";
             this.list.appendChild(li);
@@ -166,7 +166,7 @@ export class Leaderboard {
     }
 
     renderScores(dataList) {
-        this.list.innerHTML = "";
+        this.list.textContent = "";
         if (dataList.length === 0) {
             const li = document.createElement("li");
             li.textContent = "No scores yet!";
