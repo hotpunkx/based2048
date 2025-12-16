@@ -56,6 +56,11 @@ export class InputManager {
             const modifiers = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
             const mapped = map[event.which];
 
+            // Ignore input if the user is typing in a text field
+            if (event.target.tagName.toLowerCase() === "input" || event.target.tagName.toLowerCase() === "textarea") {
+                return;
+            }
+
             if (!modifiers) {
                 if (mapped !== undefined) {
                     event.preventDefault();
