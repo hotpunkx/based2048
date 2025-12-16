@@ -34,6 +34,9 @@ export class Actuator {
     }
 
     addTile(tile) {
+        if (!tile || typeof tile.x !== 'number' || typeof tile.y !== 'number' || typeof tile.value !== 'number') {
+            return;
+        }
         const wrapper = document.createElement("div");
         const inner = document.createElement("div");
         const position = tile.previousPosition || { x: tile.x, y: tile.y };
