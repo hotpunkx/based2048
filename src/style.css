@@ -39,6 +39,8 @@ body {
   /* Prevent scrolling on desktop */
   touch-action: none;
   /* Prevent scrolling on mobile */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #app {
@@ -271,7 +273,7 @@ body {
   width: var(--tile-size);
   height: var(--tile-size);
   border-radius: var(--border-radius);
-  transition: transform 100ms ease-in-out;
+  transition: transform 150ms ease-in-out;
   z-index: 10;
 }
 
