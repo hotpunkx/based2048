@@ -43,10 +43,41 @@ export class WalletManager {
             console.log("Connected:", this.account.address);
             this.notifyListeners();
             return this.account;
-
         } catch (error) {
             console.error("Connection failed:", error);
             throw error;
+        }
+    }
+
+    async autoConnect() {
+        try {
+            // Priority: Coinbase Wallet (Smart Wallet) for Base App
+            const wallet = createWallet("com.coinbase.wallet");
+
+            // Try enabling auto-connect if supported or just connect
+            // In many environments (like Base App), connect() might work without popup if previously authorized
+            // or if it's the native injector.
+
+            this.account = await wallet.connect({
+                client: client,
+                chain: this.chain,
+            });
+
+            this.activeWallet = wallet;
+
+            // Check chain
+            const chainId = wallet.getChain()?.id;
+            if (chainId && chainId !== this.chain.id) {
+                await this.switchNetwork();
+            }
+
+            console.log("Auto-Connected:", this.account.address);
+            this.notifyListeners();
+            return this.account;
+        } catch (error) {
+            // Auto-connect failed (likely needs user interaction), swallow error and let user connect manually
+            console.log("Auto-connect skipped or failed:", error);
+            return null;
         }
     }
 

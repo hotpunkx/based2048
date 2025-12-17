@@ -20,9 +20,15 @@ export class Leaderboard {
         this.mintBtn = document.getElementById("mint-button");
 
         this.currentUser = null;
-        this.useMock = true; // Set to true for offline testing
+        this.useMock = false; // Set to true for offline testing
 
         this.bindEvents();
+        this.init();
+    }
+
+    async init() {
+        // Attempt auto-connect for Base App
+        await this.handleAutoConnect();
     }
 
     bindEvents() {
@@ -109,7 +115,73 @@ export class Leaderboard {
         }
     }
 
+    async handleAutoConnect() {
+        if (!window.walletManager) return;
+
+        try {
+            const account = await window.walletManager.autoConnect();
+            if (account) {
+                this.walletStatus.textContent = "Auto-Connected: " + account.address.slice(0, 6);
+                this.walletStatus.style.color = "var(--neon-green)";
+                this.walletButtons.style.display = "none";
+
+                // Check NFT
+                const hasNft = await window.walletManager.checkOwnership();
+                if (hasNft) {
+                    this.mintBtn.style.display = "none";
+                    this.usernameInput.style.display = "none";
+                    this.loginError.textContent = "Loading Profile...";
+                    this.loginError.style.color = "var(--neon-cyan)";
+                    await this.loginWithWallet(account.address);
+                    this.startGameBtn.disabled = false;
+                    this.loginError.textContent = "READY TO PLAY";
+                    this.loginError.style.color = "var(--neon-green)";
+                } else {
+                    this.loginError.textContent = "NFT Required to Play!";
+                    this.loginError.style.color = "var(--neon-pink)";
+                    this.mintBtn.style.display = "block";
+                    this.usernameInput.style.display = "inline-block";
+                    this.startGameBtn.disabled = true;
+                }
+            }
+        } catch (e) {
+            console.log("Auto connect failed", e);
+        }
+    }
+
     async handleWalletConnect(walletId) {
+        // Mock Mode Bypass
+        if (this.useMock) {
+            this.walletButtons.style.display = "none";
+            this.walletStatus.textContent = "Mock Wallet Connected";
+            this.walletStatus.style.color = "var(--neon-green)";
+
+            const mockAddress = "0x" + Math.random().toString(16).substr(2, 40);
+
+            // Check if we have "mock NFT"
+            const hasNft = localStorage.getItem("mock_nft_" + mockAddress) === "true";
+
+            if (hasNft) {
+                this.mintBtn.style.display = "none";
+                this.usernameInput.style.display = "none";
+                this.loginError.textContent = "Loading Mock Profile...";
+                this.loginError.style.color = "var(--neon-cyan)";
+                await this.loginWithWallet(mockAddress);
+                this.startGameBtn.disabled = false;
+                this.loginError.textContent = "READY TO PLAY (MOCK)";
+                this.loginError.style.color = "var(--neon-green)";
+            } else {
+                this.loginError.textContent = "Mock NFT Required! Create a username to mint.";
+                this.loginError.style.color = "var(--neon-pink)";
+                this.mintBtn.style.display = "block";
+                this.usernameInput.style.display = "inline-block";
+                this.startGameBtn.disabled = true;
+                // Store address for minting step
+                this.tempMockAddress = mockAddress;
+            }
+            return;
+        }
+
         if (!window.walletManager) return;
 
         this.loginError.textContent = "";
@@ -196,18 +268,31 @@ export class Leaderboard {
 
         this.mintBtn.textContent = "Minting...";
         try {
-            await window.walletManager.mint();
+            let hasNft = false;
 
-            // Re-check
-            this.mintBtn.textContent = "Checking Access...";
-            const hasNft = await window.walletManager.checkOwnership();
+            if (this.useMock) {
+                // Simulate minting delay
+                await new Promise(r => setTimeout(r, 1000));
+                if (this.tempMockAddress) {
+                    localStorage.setItem("mock_nft_" + this.tempMockAddress, "true");
+                    // Also use tempMockAddress for login
+                    window.mockWalletAddress = this.tempMockAddress;
+                }
+                hasNft = true;
+            } else {
+                await window.walletManager.mint();
+
+                // Re-check
+                this.mintBtn.textContent = "Checking Access...";
+                hasNft = await window.walletManager.checkOwnership();
+            }
 
             if (hasNft) {
                 this.mintBtn.style.display = "none";
                 this.usernameInput.style.display = "none";
                 this.loginError.textContent = "Mint Successful! Loading Profile...";
                 this.loginError.style.color = "var(--neon-cyan)";
-                await this.loginWithWallet(window.walletManager.getAddress(), username);
+                await this.loginWithWallet(this.useMock ? (window.mockWalletAddress || "0xMock") : window.walletManager.getAddress(), username);
                 this.startGameBtn.disabled = false;
                 this.loginError.textContent = "Mint Success! READY TO PLAY";
                 this.loginError.style.color = "var(--neon-green)";
