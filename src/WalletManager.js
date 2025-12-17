@@ -1,7 +1,7 @@
 import { createWallet } from "thirdweb/wallets";
 import { base } from "thirdweb/chains";
 import { client } from "./thirdweb";
-import { getContract } from "thirdweb";
+import { getContract, sendTransaction } from "thirdweb";
 import { balanceOf, claimTo } from "thirdweb/extensions/erc721";
 
 export class WalletManager {

@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit, doc, getDoc, setDoc, updateDoc, serverTimestamp, where } from "firebase/firestore";
 
 export class Leaderboard {
     constructor(gameInstance) {
@@ -32,105 +32,168 @@ export class Leaderboard {
             if (event.target === this.modal) this.close();
         };
 
-        this.startGameBtn.onclick = () => this.handleLogin();
+        this.startGameBtn.onclick = () => this.onStartGameClick();
 
         // Wallet Buttons
         this.connectMetaMaskBtn.onclick = () => this.handleWalletConnect("io.metamask");
         this.connectCoinbaseBtn.onclick = () => this.handleWalletConnect("com.coinbase.wallet");
         this.mintBtn.onclick = () => this.handleMint();
-
-        // Allow Enter key to submit username
-        this.usernameInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") this.handleLogin();
-        });
     }
 
-    async handleLogin() {
-        const username = this.usernameInput.value.trim().toLowerCase();
-        if (!username) {
-            this.loginError.textContent = "Please enter a username.";
-            return;
-        }
+    async loginWithWallet(address, newUsername = null) {
+        if (!address) return;
 
-        if (username.length < 3) {
-            this.loginError.textContent = "Username must be at least 3 characters.";
-            return;
-        }
+        const docId = address.toLowerCase();
 
-        this.startGameBtn.disabled = true;
-        this.startGameBtn.textContent = "CHECKING...";
-        this.loginError.textContent = "";
+        // Update UI
+        this.loginError.textContent = "Loading Profile...";
 
         if (this.useMock) {
-            this.mockLogin(username);
+            // Mock login with wallet
+            setTimeout(() => {
+                let storedUser = localStorage.getItem("mock_user_" + docId);
+                if (storedUser) {
+                    this.currentUser = JSON.parse(storedUser);
+                } else {
+                    this.currentUser = {
+                        wallet: address,
+                        username: newUsername || ("Player " + address.slice(0, 4)),
+                        bestScore: 0,
+                        chain: "base",
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    };
+                    localStorage.setItem("mock_user_" + docId, JSON.stringify(this.currentUser));
+                }
+                this.completeLogin();
+            }, 500);
             return;
         }
 
         try {
-            const userRef = doc(db, "players", username);
+            const userRef = doc(db, "players", docId);
             const userSnap = await getDoc(userRef);
 
             if (userSnap.exists()) {
                 this.currentUser = userSnap.data();
-                this.currentUser = userSnap.data();
             } else {
                 // Create new user
                 const newUser = {
-                    username: username,
+                    wallet: address,
+                    username: newUsername || "Unknown",
                     bestScore: 0,
+                    chain: "base",
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp()
                 };
                 await setDoc(userRef, newUser);
                 this.currentUser = newUser;
-                this.currentUser = newUser;
             }
 
-            this.completeLogin();
+            // this.completeLogin(); // Do not auto-start. Wait for user to click START GAME.
 
         } catch (error) {
-            console.error("Login failed");
-            this.loginError.textContent = "Error: " + error.message + " (Switching to offline mode)";
-            // Fallback to mock if online fails
+            console.error("Login failed:", error);
+            this.loginError.textContent = "Error loading profile. Playing offline.";
+            // Fallback to offline/mock
             this.useMock = true;
-            this.mockLogin(username);
+            this.currentUser = {
+                wallet: address,
+                username: newUsername || "Offline Player",
+                bestScore: 0,
+                chain: "base",
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            // this.completeLogin();
         }
     }
 
     async handleWalletConnect(walletId) {
         if (!window.walletManager) return;
 
-        this.loginError.textContent = "Connecting...";
+        this.loginError.textContent = "";
+        this.walletStatus.textContent = "Connecting to Wallet...";
+        this.walletStatus.style.color = "var(--neon-yellow)";
 
         try {
             const account = await window.walletManager.connect(walletId);
 
             // Connected, check NFT
-            this.walletStatus.textContent = "Checking NFT Access...";
+            this.walletStatus.textContent = "Checking Access Pass...";
             const hasNft = await window.walletManager.checkOwnership();
 
             this.walletButtons.style.display = "none";
             this.walletStatus.textContent = "Connected: " + account.address.slice(0, 6) + "..." + account.address.slice(-4);
+            this.walletStatus.style.color = "var(--neon-green)";
 
             if (hasNft) {
-                this.usernameInput.style.display = "inline-block";
-                this.usernameInput.value = account.address;
-                this.startGameBtn.disabled = false;
-                this.loginError.textContent = "";
                 this.mintBtn.style.display = "none";
+                this.usernameInput.style.display = "none"; // Hide username input
+
+                // Login with wallet
+                this.loginError.textContent = "Loading Profile...";
+                this.loginError.style.color = "var(--neon-cyan)";
+                await this.loginWithWallet(account.address);
+
+                this.startGameBtn.disabled = false;
+                this.loginError.textContent = "READY TO PLAY";
+                this.loginError.style.color = "var(--neon-green)";
+
             } else {
-                this.loginError.textContent = "NFT Required to Play!";
+                this.loginError.textContent = "NFT Required to Play! Create a username to mint.";
+                this.loginError.style.color = "var(--neon-pink)";
                 this.mintBtn.style.display = "block";
+                this.usernameInput.style.display = "inline-block"; // Show input for new user
                 this.startGameBtn.disabled = true;
             }
 
         } catch (error) {
-            this.loginError.textContent = "Connection failed: " + error.message;
+            console.error(error);
+            this.walletStatus.textContent = "Connection Failed";
+            this.walletStatus.style.color = "var(--neon-pink)";
+            if (error.message && error.message.includes("rejected")) {
+                this.loginError.textContent = "User rejected connection.";
+            } else {
+                this.loginError.textContent = "Error: " + (error.message || "Unknown error");
+            }
+            this.loginError.style.color = "var(--neon-pink)";
         }
     }
 
     async handleMint() {
+        const username = this.usernameInput.value.trim();
+        if (!username || username.length < 3) {
+            this.loginError.textContent = "Username must be at least 3 characters.";
+            return;
+        }
+
         this.mintBtn.disabled = true;
+        this.mintBtn.textContent = "Checking Username...";
+
+        // 1. Check Uniqueness
+        try {
+            if (!this.useMock) {
+                const q = query(collection(db, "players"), where("username", "==", username));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    this.loginError.textContent = "Username already taken.";
+                    this.mintBtn.disabled = false;
+                    this.mintBtn.textContent = "MINT FREE ACCESS NFT";
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error("Username check failed", e);
+            // Proceed with caution or block? Let's block for safety unless mock.
+            if (!this.useMock) {
+                this.loginError.textContent = "Error checking username.";
+                this.mintBtn.disabled = false;
+                this.mintBtn.textContent = "MINT FREE ACCESS NFT";
+                return;
+            }
+        }
+
         this.mintBtn.textContent = "Minting...";
         try {
             await window.walletManager.mint();
@@ -141,44 +204,37 @@ export class Leaderboard {
 
             if (hasNft) {
                 this.mintBtn.style.display = "none";
-                this.usernameInput.style.display = "inline-block";
-                this.usernameInput.value = window.walletManager.getAddress();
+                this.usernameInput.style.display = "none";
+                this.loginError.textContent = "Mint Successful! Loading Profile...";
+                this.loginError.style.color = "var(--neon-cyan)";
+                await this.loginWithWallet(window.walletManager.getAddress(), username);
                 this.startGameBtn.disabled = false;
-                this.loginError.textContent = "Mint Successful! You can now play.";
+                this.loginError.textContent = "Mint Success! READY TO PLAY";
+                this.loginError.style.color = "var(--neon-green)";
             } else {
                 this.loginError.textContent = "Minted but ownership check failed. Try refreshing.";
                 this.mintBtn.disabled = false;
-                this.mintBtn.textContent = "MINT ACCESS PASS";
+                this.mintBtn.textContent = "MINT FREE ACCESS NFT";
             }
         } catch (error) {
             console.error(error);
             this.loginError.textContent = "Mint failed: " + error.message;
             this.mintBtn.disabled = false;
-            this.mintBtn.textContent = "MINT ACCESS PASS";
+            this.mintBtn.textContent = "MINT FREE ACCESS NFT";
         }
     }
 
-    mockLogin(username) {
-        // Simulate network delay
-        setTimeout(() => {
-            let storedUser = localStorage.getItem("mock_user_" + username);
-            if (storedUser) {
-                this.currentUser = JSON.parse(storedUser);
-            } else {
-                this.currentUser = {
-                    username: username,
-                    bestScore: 0,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                };
-                localStorage.setItem("mock_user_" + username, JSON.stringify(this.currentUser));
-            }
+    onStartGameClick() {
+        if (this.currentUser) {
             this.completeLogin();
-        }, 500);
+        }
     }
+
+    // mockLogin() removed
 
     completeLogin() {
         this.usernameModal.style.display = "none";
+        this.loginError.textContent = "";
         if (this.game) {
             this.game.setup(this.currentUser ? this.currentUser.bestScore : 0);
         } else {
@@ -211,7 +267,7 @@ export class Leaderboard {
             const querySnapshot = await getDocs(q);
             this.renderScores(querySnapshot.docs.map(d => d.data()));
         } catch (error) {
-            console.error("Fetch failed");
+            console.error("Fetch failed", error);
             this.list.textContent = "";
             const li = document.createElement("li");
             li.textContent = "Error loading scores.";
@@ -246,15 +302,27 @@ export class Leaderboard {
 
         dataList.forEach((data) => {
             const li = document.createElement("li");
+
+            // Format: Username (or truncated wallet if legacy/missing)
+            let displayName = data.username ? data.username : data.wallet;
+
+            // Fallback truncation if it looks like a wallet address and is long
+            if (!data.username && displayName && displayName.length > 15) {
+                displayName = displayName.slice(0, 6) + "..." + displayName.slice(-4);
+            }
+            if (!displayName) displayName = "Unknown";
+
             // Highlight current user
-            if (this.currentUser && data.username === this.currentUser.username) {
+            if (this.currentUser && data.wallet && this.currentUser.wallet &&
+                data.wallet.toLowerCase() === this.currentUser.wallet.toLowerCase()) {
                 li.style.borderColor = "var(--neon-green)";
                 li.style.color = "var(--neon-green)";
                 li.style.boxShadow = "inset 0 0 10px rgba(0, 255, 0, 0.2)";
+                displayName += " (You)";
             }
 
             const nameSpan = document.createElement("span");
-            nameSpan.textContent = data.username;
+            nameSpan.textContent = displayName;
 
             const scoreSpan = document.createElement("span");
             scoreSpan.textContent = data.bestScore;
@@ -271,20 +339,21 @@ export class Leaderboard {
         if (!this.currentUser || score <= this.currentUser.bestScore) return;
 
         this.currentUser.bestScore = score;
+        const docId = this.currentUser.wallet.toLowerCase();
 
         if (this.useMock) {
-            localStorage.setItem("mock_user_" + this.currentUser.username, JSON.stringify(this.currentUser));
+            localStorage.setItem("mock_user_" + docId, JSON.stringify(this.currentUser));
             return;
         }
 
         try {
-            const userRef = doc(db, "players", this.currentUser.username);
+            const userRef = doc(db, "players", docId);
             await updateDoc(userRef, {
                 bestScore: score,
                 updatedAt: serverTimestamp()
             });
         } catch (error) {
-            console.error("Update failed");
+            console.error("Update failed", error);
         }
     }
 
@@ -293,3 +362,4 @@ export class Leaderboard {
         return input.replace(/[\n\r]/g, ' ').slice(0, 100);
     }
 }
+
