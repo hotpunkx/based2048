@@ -84,6 +84,10 @@ export class InputManager {
         const gameContainer = document.getElementById("app");
 
         gameContainer.addEventListener(this.eventTouchstart, function (event) {
+            if (event.target.tagName.toLowerCase() === "input" || event.target.tagName.toLowerCase() === "textarea") {
+                return;
+            }
+
             if ((!window.navigator.msPointerEnabled && event.touches.length > 1) ||
                 event.targetTouches.length > 1) {
                 return; // Ignore if touching with more than 1 finger
@@ -101,6 +105,9 @@ export class InputManager {
         }, { passive: false });
 
         gameContainer.addEventListener(this.eventTouchmove, function (event) {
+            if (event.target.tagName.toLowerCase() === "input" || event.target.tagName.toLowerCase() === "textarea") {
+                return;
+            }
             event.preventDefault();
         }, { passive: false });
 
