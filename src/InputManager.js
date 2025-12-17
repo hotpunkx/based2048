@@ -84,7 +84,9 @@ export class InputManager {
         const gameContainer = document.getElementById("app");
 
         gameContainer.addEventListener(this.eventTouchstart, function (event) {
-            if (event.target.tagName.toLowerCase() === "input" || event.target.tagName.toLowerCase() === "textarea") {
+            const target = event.target;
+            const tagName = target.tagName.toLowerCase();
+            if (tagName === "input" || tagName === "textarea" || tagName === "button" || tagName === "a" || target.closest(".modal")) {
                 return;
             }
 
@@ -105,7 +107,9 @@ export class InputManager {
         }, { passive: false });
 
         gameContainer.addEventListener(this.eventTouchmove, function (event) {
-            if (event.target.tagName.toLowerCase() === "input" || event.target.tagName.toLowerCase() === "textarea") {
+            const target = event.target;
+            const tagName = target.tagName.toLowerCase();
+            if (tagName === "input" || tagName === "textarea" || tagName === "button" || tagName === "a" || target.closest(".modal")) {
                 return;
             }
             event.preventDefault();
