@@ -44,8 +44,21 @@
       <div class="modal-content">
         <h2>ENTER USERNAME</h2>
         <p>Enter a unique username to play.</p>
-        <input type="text" id="username-input" placeholder="Username" maxlength="15">
-        <button id="start-game-button" class="leaderboard-button" style="margin-top: 20px;">START GAME</button>
+        <div id="wallet-buttons" style="margin-bottom: 20px;">
+          <button id="connect-metamask" class="leaderboard-button" style="background: #f6851b; color: white;">Connect
+            MetaMask</button>
+          <button id="connect-coinbase" class="leaderboard-button" style="background: #0052ff; color: white;">Connect
+            Coinbase</button>
+        </div>
+        <p id="wallet-status" style="margin-bottom:10px; font-size: 0.8em; color: var(--neon-cyan)">Wallet not connected
+        </p>
+
+        <button id="mint-button" class="leaderboard-button"
+          style="background: #ffd700; color: black; display: none; margin-bottom: 20px;">MINT ACCESS NFT</button>
+
+        <input type="text" id="username-input" placeholder="Username" maxlength="15" style="display:none;">
+        <!-- Hidden initially -->
+        <button id="start-game-button" class="leaderboard-button" style="margin-top: 20px;" disabled>START GAME</button>
         <p id="login-error" style="color: var(--neon-pink); margin-top: 10px;"></p>
       </div>
     </div>

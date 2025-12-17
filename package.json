@@ -12,6 +12,7 @@
     "vite": "^7.2.4"
   },
   "dependencies": {
-    "firebase": "^12.6.0"
+    "firebase": "^12.6.0",
+    "thirdweb": "^5.116.1"
   }
 }

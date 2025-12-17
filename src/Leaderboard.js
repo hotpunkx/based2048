@@ -13,6 +13,11 @@ export class Leaderboard {
         this.usernameInput = document.getElementById("username-input");
         this.startGameBtn = document.getElementById("start-game-button");
         this.loginError = document.getElementById("login-error");
+        this.connectMetaMaskBtn = document.getElementById("connect-metamask");
+        this.connectCoinbaseBtn = document.getElementById("connect-coinbase");
+        this.walletStatus = document.getElementById("wallet-status");
+        this.walletButtons = document.getElementById("wallet-buttons");
+        this.mintBtn = document.getElementById("mint-button");
 
         this.currentUser = null;
         this.useMock = true; // Set to true for offline testing
@@ -28,6 +33,11 @@ export class Leaderboard {
         };
 
         this.startGameBtn.onclick = () => this.handleLogin();
+
+        // Wallet Buttons
+        this.connectMetaMaskBtn.onclick = () => this.handleWalletConnect("io.metamask");
+        this.connectCoinbaseBtn.onclick = () => this.handleWalletConnect("com.coinbase.wallet");
+        this.mintBtn.onclick = () => this.handleMint();
 
         // Allow Enter key to submit username
         this.usernameInput.addEventListener("keypress", (e) => {
@@ -84,6 +94,67 @@ export class Leaderboard {
             // Fallback to mock if online fails
             this.useMock = true;
             this.mockLogin(username);
+        }
+    }
+
+    async handleWalletConnect(walletId) {
+        if (!window.walletManager) return;
+
+        this.loginError.textContent = "Connecting...";
+
+        try {
+            const account = await window.walletManager.connect(walletId);
+
+            // Connected, check NFT
+            this.walletStatus.textContent = "Checking NFT Access...";
+            const hasNft = await window.walletManager.checkOwnership();
+
+            this.walletButtons.style.display = "none";
+            this.walletStatus.textContent = "Connected: " + account.address.slice(0, 6) + "..." + account.address.slice(-4);
+
+            if (hasNft) {
+                this.usernameInput.style.display = "inline-block";
+                this.usernameInput.value = account.address;
+                this.startGameBtn.disabled = false;
+                this.loginError.textContent = "";
+                this.mintBtn.style.display = "none";
+            } else {
+                this.loginError.textContent = "NFT Required to Play!";
+                this.mintBtn.style.display = "block";
+                this.startGameBtn.disabled = true;
+            }
+
+        } catch (error) {
+            this.loginError.textContent = "Connection failed: " + error.message;
+        }
+    }
+
+    async handleMint() {
+        this.mintBtn.disabled = true;
+        this.mintBtn.textContent = "Minting...";
+        try {
+            await window.walletManager.mint();
+
+            // Re-check
+            this.mintBtn.textContent = "Checking Access...";
+            const hasNft = await window.walletManager.checkOwnership();
+
+            if (hasNft) {
+                this.mintBtn.style.display = "none";
+                this.usernameInput.style.display = "inline-block";
+                this.usernameInput.value = window.walletManager.getAddress();
+                this.startGameBtn.disabled = false;
+                this.loginError.textContent = "Mint Successful! You can now play.";
+            } else {
+                this.loginError.textContent = "Minted but ownership check failed. Try refreshing.";
+                this.mintBtn.disabled = false;
+                this.mintBtn.textContent = "MINT ACCESS PASS";
+            }
+        } catch (error) {
+            console.error(error);
+            this.loginError.textContent = "Mint failed: " + error.message;
+            this.mintBtn.disabled = false;
+            this.mintBtn.textContent = "MINT ACCESS PASS";
         }
     }
 
