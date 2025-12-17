@@ -9,8 +9,15 @@ import { WalletManager } from './WalletManager.js'
 // Wait for the DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", () => {
   window.requestAnimationFrame(() => {
-    window.walletManager = new WalletManager(); // Initialize WalletManager first
-    const game = new Game(4, InputManager, Actuator);
-    window.leaderboard = new Leaderboard(game);
+    try {
+      console.log("Initializing Game...");
+      window.walletManager = new WalletManager(); // Initialize WalletManager first
+      const game = new Game(4, InputManager, Actuator);
+      window.leaderboard = new Leaderboard(game);
+      console.log("Initialization Complete");
+    } catch (e) {
+      console.error("Init Error:", e);
+      alert("Game Init Error: " + e.message + "\n" + e.stack);
+    }
   });
 });

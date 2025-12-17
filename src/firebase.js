@@ -11,5 +11,14 @@ const firebaseConfig = {
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+const app = (() => {
+    try {
+        if (!firebaseConfig.apiKey) throw new Error("Missing Firebase Config");
+        return initializeApp(firebaseConfig);
+    } catch (e) {
+        console.error("Firebase Init Error:", e);
+        return null;
+    }
+})();
+
+export const db = app ? getFirestore(app) : null;
