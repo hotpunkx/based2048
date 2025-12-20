@@ -68,20 +68,34 @@
     <div id="username-modal" class="modal" style="display: block;">
       <div class="modal-content">
         <h2>ENTER USERNAME</h2>
-        <p>Enter a unique username to play.</p>
         <div id="wallet-buttons" style="margin-bottom: 20px;">
           <button id="connect-coinbase" class="leaderboard-button" style="background: #0052ff; color: white;">Connect
-            Coinbase</button>
+            Base</button>
         </div>
-        <p id="wallet-status" style="margin-bottom:10px; font-size: 0.8em; color: var(--neon-cyan)">Wallet not connected
+        <p id="wallet-status" class="wallet-status-text">Wallet not
+          connected
         </p>
 
-        <button id="mint-button" class="leaderboard-button"
-          style="background: #ffd700; color: black; display: none; margin-bottom: 20px;">MINT FREE ACCESS NFT</button>
+        <div id="mint-container" style="display: none; margin-bottom: 20px;">
+          <div class="mint-container-bg">
+            <button id="mint-button" class="mint-button">MINT FREE ACCESS NFT</button>
+          </div>
+        </div>
 
-        <input type="text" id="username-input" placeholder="Username" maxlength="15">
+
+        <input id="username-input" placeholder="Unique username" class="input" name="text" type="text" maxlength="15">
         <!-- Hidden initially -->
-        <button id="start-game-button" class="leaderboard-button" style="margin-top: 20px;" disabled>START GAME</button>
+        <button id="start-game-button" style="margin-top: 20px;" disabled>
+          P L A Y
+          <div id="clip">
+            <div id="leftTop" class="corner"></div>
+            <div id="rightBottom" class="corner"></div>
+            <div id="rightTop" class="corner"></div>
+            <div id="leftBottom" class="corner"></div>
+          </div>
+          <span id="rightArrow" class="arrow"></span>
+          <span id="leftArrow" class="arrow"></span>
+        </button>
         <p id="login-error" style="color: var(--neon-pink); margin-top: 10px;"></p>
       </div>
     </div>

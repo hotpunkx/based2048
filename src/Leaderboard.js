@@ -18,6 +18,7 @@ export class Leaderboard {
         this.walletStatus = document.getElementById("wallet-status");
         this.walletButtons = document.getElementById("wallet-buttons");
         this.mintBtn = document.getElementById("mint-button");
+        this.mintContainer = document.getElementById("mint-container");
 
         this.currentUser = null;
 
@@ -60,7 +61,7 @@ export class Leaderboard {
             this.connectCoinbaseBtn.style.display = "none";
         }
         // Force Mint button to be visible initially if not connected
-        this.mintBtn.style.display = "block";
+        this.mintContainer.style.display = "block";
 
         this.mintBtn.onclick = () => this.handleMint();
     }
@@ -149,24 +150,24 @@ export class Leaderboard {
                     this.loginError.textContent = "READY TO PLAY";
                     this.loginError.style.color = "var(--neon-green)";
                     this.usernameInput.style.display = "none";
-                    this.mintBtn.style.display = "none";
+                    this.mintContainer.style.display = "none";
                     await this.loginWithWallet(account.address);
                     this.startGameBtn.disabled = false;
                 } else {
                     // No NFT, need to mint
                     this.loginError.textContent = "Wallet Connected! Enter username to Mint NFT.";
                     this.loginError.style.color = "var(--neon-yellow)";
-                    this.mintBtn.style.display = "block";
+                    this.mintContainer.style.display = "block";
                     this.usernameInput.style.display = "block";
                     this.startGameBtn.disabled = true;
                 }
 
             } else {
-                this.mintBtn.style.display = "block";
+                this.mintContainer.style.display = "block";
             }
         } catch (e) {
             console.log("Auto connect failed", e);
-            this.mintBtn.style.display = "block";
+            this.mintContainer.style.display = "block";
         }
     }
 
@@ -189,7 +190,7 @@ export class Leaderboard {
             this.walletStatus.style.color = "var(--neon-green)";
 
             if (hasNft) {
-                this.mintBtn.style.display = "none";
+                this.mintContainer.style.display = "none";
                 this.usernameInput.style.display = "none"; // Hide username input
 
                 // Login with wallet
@@ -205,7 +206,7 @@ export class Leaderboard {
             } else {
                 this.loginError.textContent = "Wallet Connected! Enter username to Mint NFT.";
                 this.loginError.style.color = "var(--neon-yellow)";
-                this.mintBtn.style.display = "block";
+                this.mintContainer.style.display = "block";
                 this.usernameInput.style.display = "block";
                 this.startGameBtn.disabled = true; // Wait for mint
                 return true; // Connected, needs mint
@@ -232,7 +233,7 @@ export class Leaderboard {
             const connected = await this.handleWalletConnect("com.coinbase.wallet");
             if (!connected) return; // Stop if connection failed
 
-            if (this.mintBtn.style.display === "none") return;
+            if (this.mintContainer.style.display === "none") return;
         }
 
         const username = this.usernameInput.value.trim();
@@ -281,7 +282,7 @@ export class Leaderboard {
             hasNft = await window.walletManager.checkOwnership();
 
             if (hasNft) {
-                this.mintBtn.style.display = "none";
+                this.mintContainer.style.display = "none";
                 this.usernameInput.style.display = "none";
                 this.loginError.textContent = "Mint Successful! Loading Profile...";
                 this.loginError.style.color = "var(--neon-cyan)";

@@ -8,6 +8,7 @@
   --neon-yellow: #ffff00;
   --neon-green: #00ff00;
   --neon-orange: #ff8800;
+  --neon-red: #ff0000;
 
   --font-main: 'Orbitron', sans-serif;
 
@@ -652,6 +653,7 @@ body {
 }
 
 /* Username Input Styles */
+/* Old Username Input Styles - overridden by .input class
 #username-input {
   background: rgba(0, 0, 0, 0.5);
   border: 2px solid var(--neon-cyan);
@@ -665,6 +667,7 @@ body {
   outline: none;
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
 }
+*/
 
 #username-input:focus {
   box-shadow: 0 0 20px var(--neon-cyan);
@@ -741,6 +744,268 @@ body.is-embedded .title {
   font-size: 32px;
 }
 
-body.is-embedded .game-explanation {
+
+/* Start Game Button Styles */
+#start-game-button {
+  position: relative;
+  width: 11em;
+  height: 4em;
+  outline: none;
+  transition: 0.1s;
+  background-color: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: bold;
+  color: #ddebf0;
+  cursor: pointer;
+}
+
+#start-game-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+#start-game-button #clip {
+  --color: #2761c3;
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  border: 5px double var(--color);
+  box-shadow: inset 0px 0px 15px #195480;
+  -webkit-clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+}
+
+#start-game-button .arrow {
+  position: absolute;
+  transition: 0.2s;
+  background-color: #2761c3;
+  top: 35%;
+  width: 11%;
+  height: 30%;
+}
+
+#start-game-button #leftArrow {
+  left: -13.5%;
+  -webkit-clip-path: polygon(100% 0, 100% 100%, 0 50%);
+  clip-path: polygon(100% 0, 100% 100%, 0 50%);
+}
+
+#start-game-button #rightArrow {
+  -webkit-clip-path: polygon(100% 49%, 0 0, 0 100%);
+  clip-path: polygon(100% 49%, 0 0, 0 100%);
+  left: 102%;
+}
+
+#start-game-button:hover #rightArrow {
+  background-color: #27c39f;
+  left: -15%;
+  animation: 0.6s ease-in-out both infinite alternate rightArrow8;
+}
+
+#start-game-button:hover #leftArrow {
+  background-color: #27c39f;
+  left: 103%;
+  animation: 0.6s ease-in-out both infinite alternate leftArrow8;
+}
+
+#start-game-button .corner {
+  position: absolute;
+  width: 4em;
+  height: 4em;
+  background-color: #2761c3;
+  box-shadow: inset 1px 1px 8px #2781c3;
+  transform: scale(1) rotate(45deg);
+  transition: 0.2s;
+}
+
+#start-game-button #rightTop {
+  top: -1.98em;
+  left: 91%;
+}
+
+#start-game-button #leftTop {
+  top: -1.96em;
+  left: -3.0em;
+}
+
+#start-game-button #leftBottom {
+  top: 2.10em;
+  left: -2.15em;
+}
+
+#start-game-button #rightBottom {
+  top: 45%;
+  left: 88%;
+}
+
+#start-game-button:hover #leftTop {
+  animation: 0.1s ease-in-out 0.05s both changeColor8,
+    0.2s linear 0.4s both lightEffect8;
+}
+
+#start-game-button:hover #rightTop {
+  animation: 0.1s ease-in-out 0.15s both changeColor8,
+    0.2s linear 0.4s both lightEffect8;
+}
+
+#start-game-button:hover #rightBottom {
+  animation: 0.1s ease-in-out 0.25s both changeColor8,
+    0.2s linear 0.4s both lightEffect8;
+}
+
+#start-game-button:hover #leftBottom {
+  animation: 0.1s ease-in-out 0.35s both changeColor8,
+    0.2s linear 0.4s both lightEffect8;
+}
+
+#start-game-button:hover .corner {
+  transform: scale(1.25) rotate(45deg);
+}
+
+#start-game-button:hover #clip {
+  animation: 0.2s ease-in-out 0.55s both greenLight8;
+  --color: #27c39f;
+}
+
+@keyframes changeColor8 {
+  from {
+    background-color: #2781c3;
+  }
+
+  to {
+    background-color: #27c39f;
+  }
+}
+
+@keyframes lightEffect8 {
+  from {
+    box-shadow: 1px 1px 5px #27c39f;
+  }
+
+  to {
+    box-shadow: 0 0 2px #27c39f;
+  }
+}
+
+@keyframes greenLight8 {
+  from {}
+
+  to {
+    box-shadow: inset 0px 0px 32px #27c39f;
+  }
+}
+
+@keyframes leftArrow8 {
+  from {
+    transform: translate(0px);
+  }
+
+  to {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes rightArrow8 {
+  from {
+    transform: translate(0px);
+  }
+
+  to {
+    transform: translateX(-10px);
+  }
+}
+
+
+/* Mint Button Styles (Refined from User Request) */
+.mint-button {
+  font-size: 1.4em;
+  padding: 0.6em 0.8em;
+  border-radius: 0.5em;
+  /* Slightly smaller to fit inside container radius */
+  border: none;
+  background-color: #000;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 2px 2px 3px #000000b4;
+  width: 100%;
+  /* Fill container */
+  height: 100%;
+  font-family: var(--font-main);
+  /* Ensure consistency */
+  font-weight: bold;
+}
+
+.mint-container-bg {
+  position: relative;
+  padding: 3px;
+  background: linear-gradient(90deg, #03a9f4, #f441a5);
+  border-radius: 0.6em;
+  /* Adjusted to look good with button radius */
+  transition: all 0.4s ease;
+  display: inline-block;
+  /* Or block, depending on layout needs */
+}
+
+.mint-container-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 0.6em;
+  z-index: -10;
+  filter: blur(0);
+  transition: filter 0.4s ease;
+}
+
+.mint-container-bg:hover::before {
+  background: linear-gradient(90deg, #03a9f4, #f441a5);
+  filter: blur(1.2em);
+}
+
+
+/* Username Input Styles (Refined) */
+.input {
+  background-color: #212121;
+  max-width: 190px;
+  height: 40px;
+  padding: 10px;
+  /* text-align: center; */
+  border: 2px solid white;
+  border-radius: 5px;
+  /* box-shadow: 3px 3px 2px rgb(249, 255, 85); */
+  color: white;
+  /* Ensure text is visible */
+  font-family: var(--font-main);
+  margin-bottom: 20px;
+  /* spacing */
   display: none;
+  /* Managed by JS logic */
+  margin: 0 auto;
+  /* Center it */
+}
+
+/* Force display block when active (will be overridden by JS inline styles, but good default) */
+.input:not([style*="display: none"]) {
+  display: block;
+}
+
+
+.input:focus {
+  color: rgb(0, 255, 255);
+  background-color: #212121;
+  outline-color: rgb(0, 255, 255);
+  box-shadow: -3px -3px 15px rgb(0, 255, 255);
+  transition: .1s;
+  transition-property: box-shadow;
+}
+
+/* Wallet Status Text */
+.wallet-status-text {
+  margin-bottom: 10px;
+  font-size: 0.8em;
+  color: var(--neon-red);
 }
