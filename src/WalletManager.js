@@ -11,6 +11,7 @@ export class WalletManager {
         this.chain = base;
         this.listeners = [];
         this.nftContractAddress = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
+        console.log("WalletManager Init. Contract Address:", this.nftContractAddress);
     }
 
     onAddressChanged(callback) {
