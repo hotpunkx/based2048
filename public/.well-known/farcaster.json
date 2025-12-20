@@ -1,0 +1,31 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "baseBuilder": {
+    "ownerAddress": ""
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Based Meme Maker",
+    "homeUrl": "https://mememinter.vercel.app/",
+    "iconUrl": "https://mememinter.vercel.app/icon.png",
+    "splashImageUrl": "https://mememinter.vercel.app/splash.png",
+    "splashBackgroundColor": "#0A0E1A",
+    "subtitle": "Make memes easily",
+    "description": "Create, customize and share memes instantly on Baseapp.",
+    "primaryCategory": "entertainment",
+    "tags": [
+      "memes",
+      "fun",
+      "base"
+    ],
+    "tagline": "Make your based memes",
+    "ogTitle": "Based Meme Maker",
+    "ogDescription": "Create based memes instantly.",
+    "ogImageUrl": "https://mememinter.vercel.app/og.png",
+    "noindex": true
+  }
+}

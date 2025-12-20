@@ -13,7 +13,7 @@ export class Leaderboard {
         this.usernameInput = document.getElementById("username-input");
         this.startGameBtn = document.getElementById("start-game-button");
         this.loginError = document.getElementById("login-error");
-        this.connectMetaMaskBtn = document.getElementById("connect-metamask");
+
         this.connectCoinbaseBtn = document.getElementById("connect-coinbase");
         this.walletStatus = document.getElementById("wallet-status");
         this.walletButtons = document.getElementById("wallet-buttons");
@@ -40,9 +40,20 @@ export class Leaderboard {
 
         this.startGameBtn.onclick = () => this.onStartGameClick();
 
+        // Enable start button when username is typed
+        this.usernameInput.addEventListener('input', (e) => {
+            this.startGameBtn.disabled = e.target.value.length < 3;
+        });
+
         // Wallet Buttons
-        this.connectMetaMaskBtn.onclick = () => this.handleWalletConnect("io.metamask");
-        this.connectCoinbaseBtn.onclick = () => this.handleWalletConnect("com.coinbase.wallet");
+        // We now treat "Mint" as the primary "Connect & Mint" action for new users
+        if (this.connectCoinbaseBtn) {
+            this.connectCoinbaseBtn.style.display = "none"; // Hide explicit connect button, use Mint instead
+        }
+        // Force Mint button to be visible initially if not connected (handled in init/logic) generally
+        // But for safety, let's just use the Mint button as the main logical entry.
+        this.mintBtn.style.display = "block";
+
         this.mintBtn.onclick = () => this.handleMint();
     }
 
@@ -126,26 +137,33 @@ export class Leaderboard {
                 this.walletButtons.style.display = "none";
 
                 // Check NFT
+                this.walletStatus.textContent = "Checking Access Pass...";
                 const hasNft = await window.walletManager.checkOwnership();
+
                 if (hasNft) {
-                    this.mintBtn.style.display = "none";
-                    this.usernameInput.style.display = "none";
-                    this.loginError.textContent = "Loading Profile...";
-                    this.loginError.style.color = "var(--neon-cyan)";
-                    await this.loginWithWallet(account.address);
-                    this.startGameBtn.disabled = false;
                     this.loginError.textContent = "READY TO PLAY";
                     this.loginError.style.color = "var(--neon-green)";
+                    this.usernameInput.style.display = "none";
+                    this.mintBtn.style.display = "none";
+                    await this.loginWithWallet(account.address);
+                    this.startGameBtn.disabled = false;
                 } else {
-                    this.loginError.textContent = "NFT Required to Play!";
-                    this.loginError.style.color = "var(--neon-pink)";
+                    // No NFT, need to mint
+                    this.loginError.textContent = "Wallet Connected! Enter username to Mint NFT.";
+                    this.loginError.style.color = "var(--neon-yellow)";
                     this.mintBtn.style.display = "block";
-                    this.usernameInput.style.display = "inline-block";
-                    this.startGameBtn.disabled = true;
+                    this.usernameInput.style.display = "block"; // Ensure visible
+                    this.startGameBtn.disabled = true; // Disable until minted
                 }
+
+            } else {
+                // Auto connect returned null (not capable)
+                // Ensure Mint button is visible for manual connection
+                this.mintBtn.style.display = "block";
             }
         } catch (e) {
             console.log("Auto connect failed", e);
+            this.mintBtn.style.display = "block";
         }
     }
 
@@ -170,6 +188,7 @@ export class Leaderboard {
                 this.startGameBtn.disabled = false;
                 this.loginError.textContent = "READY TO PLAY (MOCK)";
                 this.loginError.style.color = "var(--neon-green)";
+                return true; // Return success
             } else {
                 this.loginError.textContent = "Mock NFT Required! Create a username to mint.";
                 this.loginError.style.color = "var(--neon-pink)";
@@ -178,11 +197,11 @@ export class Leaderboard {
                 this.startGameBtn.disabled = true;
                 // Store address for minting step
                 this.tempMockAddress = mockAddress;
+                return true; // Connected, proceed to mint
             }
-            return;
         }
 
-        if (!window.walletManager) return;
+        if (!window.walletManager) return false;
 
         this.loginError.textContent = "";
         this.walletStatus.textContent = "Connecting to Wallet...";
@@ -211,13 +230,15 @@ export class Leaderboard {
                 this.startGameBtn.disabled = false;
                 this.loginError.textContent = "READY TO PLAY";
                 this.loginError.style.color = "var(--neon-green)";
+                return true; // Already has NFT
 
             } else {
-                this.loginError.textContent = "NFT Required to Play! Create a username to mint.";
-                this.loginError.style.color = "var(--neon-pink)";
+                this.loginError.textContent = "Wallet Connected! Enter username to Mint NFT.";
+                this.loginError.style.color = "var(--neon-yellow)";
                 this.mintBtn.style.display = "block";
-                this.usernameInput.style.display = "inline-block"; // Show input for new user
-                this.startGameBtn.disabled = true;
+                this.usernameInput.style.display = "block";
+                this.startGameBtn.disabled = true; // Wait for mint
+                return true; // Connected, needs mint
             }
 
         } catch (error) {
@@ -230,10 +251,23 @@ export class Leaderboard {
                 this.loginError.textContent = "Error: " + (error.message || "Unknown error");
             }
             this.loginError.style.color = "var(--neon-pink)";
+            return false;
         }
     }
 
     async handleMint() {
+        // If not connected, connect first
+        if (!window.walletManager || (!window.walletManager.isConnected() && !this.useMock)) {
+            console.log("Not connected, connecting first...");
+            const connected = await this.handleWalletConnect("com.coinbase.wallet");
+            if (!connected) return; // Stop if connection failed
+
+            // After connection, check if we still need to mint (might have ownership)
+            // handleWalletConnect updates UI and state. 
+            // If user already had NFT, mintBtn is hidden. We should check visibility/state.
+            if (this.mintBtn.style.display === "none") return;
+        }
+
         const username = this.usernameInput.value.trim();
         if (!username || username.length < 3) {
             this.loginError.textContent = "Username must be at least 3 characters.";
@@ -246,6 +280,7 @@ export class Leaderboard {
         // 1. Check Uniqueness
         try {
             if (!this.useMock) {
+                if (!db) throw new Error("Database not connected. Check .env");
                 const q = query(collection(db, "players"), where("username", "==", username));
                 const snapshot = await getDocs(q);
                 if (!snapshot.empty) {
@@ -257,9 +292,9 @@ export class Leaderboard {
             }
         } catch (e) {
             console.error("Username check failed", e);
-            // Proceed with caution or block? Let's block for safety unless mock.
             if (!this.useMock) {
-                this.loginError.textContent = "Error checking username.";
+                // Show exact error
+                this.loginError.textContent = "Check Failed: " + (e.message || "Unknown");
                 this.mintBtn.disabled = false;
                 this.mintBtn.textContent = "MINT FREE ACCESS NFT";
                 return;
@@ -310,6 +345,21 @@ export class Leaderboard {
     }
 
     onStartGameClick() {
+        if (!this.currentUser) {
+            // Guest Mode
+            const username = this.usernameInput.value.trim() || "Guest";
+            const guestId = "guest_" + Date.now().toString().slice(-6);
+            this.currentUser = {
+                wallet: guestId,
+                username: username,
+                bestScore: 0,
+                chain: "guest",
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            // Save guest session locally
+            localStorage.setItem("last_guest_session", JSON.stringify(this.currentUser));
+        }
         if (this.currentUser) {
             this.completeLogin();
         }
@@ -424,10 +474,19 @@ export class Leaderboard {
         if (!this.currentUser || score <= this.currentUser.bestScore) return;
 
         this.currentUser.bestScore = score;
+
+        // Safety check
+        if (!this.currentUser.wallet) return;
+
         const docId = this.currentUser.wallet.toLowerCase();
 
-        if (this.useMock) {
-            localStorage.setItem("mock_user_" + docId, JSON.stringify(this.currentUser));
+        // Guest / Mock save
+        if (this.useMock || this.currentUser.chain === "guest") {
+            if (this.currentUser.chain === "guest") {
+                localStorage.setItem("last_guest_session", JSON.stringify(this.currentUser));
+            } else {
+                localStorage.setItem("mock_user_" + docId, JSON.stringify(this.currentUser));
+            }
             return;
         }
 
