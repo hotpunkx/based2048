@@ -667,3 +667,9 @@ body {
   box-shadow: 0 0 20px var(--neon-cyan);
 }
 
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+
