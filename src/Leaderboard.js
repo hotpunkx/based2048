@@ -20,7 +20,12 @@ export class Leaderboard {
         this.mintBtn = document.getElementById("mint-button");
 
         this.currentUser = null;
-        this.useMock = false; // Set to true for offline testing
+
+        // Auto-detect offline mode if DB is missing
+        this.useMock = !db;
+        if (this.useMock) {
+            console.warn("Database not configured. Falling back to Mock/Offline mode.");
+        }
 
         this.bindEvents();
         this.init();
