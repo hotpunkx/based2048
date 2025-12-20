@@ -28,6 +28,8 @@
 }
 
 body {
+  background: url('/bg-mobile.jpg') no-repeat center center fixed;
+  background-size: cover;
   background-color: var(--bg-color);
   color: var(--text-color);
   font-family: var(--font-main);
@@ -648,6 +650,7 @@ body {
   border-color: #cd7f32;
   color: #cd7f32;
 }
+
 /* Username Input Styles */
 #username-input {
   background: rgba(0, 0, 0, 0.5);
@@ -667,9 +670,32 @@ body {
   box-shadow: 0 0 20px var(--neon-cyan);
 }
 
-input, textarea {
+input,
+textarea {
   -webkit-user-select: text;
   user-select: text;
   cursor: text;
 }
 
+/* Embedded Mode Overrides */
+body.is-embedded {
+  background: var(--bg-color);
+  padding: 0;
+}
+
+body.is-embedded #app {
+  padding: 10px;
+  max-width: 100vh;
+}
+
+body.is-embedded .heading {
+  margin-bottom: 10px;
+}
+
+body.is-embedded .title {
+  font-size: 32px;
+}
+
+body.is-embedded .game-explanation {
+  display: none;
+}

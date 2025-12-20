@@ -22,9 +22,9 @@ export class Leaderboard {
         this.currentUser = null;
 
         // Auto-detect offline mode if DB is missing
-        this.useMock = !db;
-        if (this.useMock) {
-            console.warn("Database not configured. Falling back to Mock/Offline mode.");
+        this.mockDB = !db;
+        if (this.mockDB) {
+            console.warn("Database not configured. Falling back to Mock DB mode.");
         }
 
         this.bindEvents();
@@ -51,12 +51,10 @@ export class Leaderboard {
         });
 
         // Wallet Buttons
-        // We now treat "Mint" as the primary "Connect & Mint" action for new users
         if (this.connectCoinbaseBtn) {
-            this.connectCoinbaseBtn.style.display = "none"; // Hide explicit connect button, use Mint instead
+            this.connectCoinbaseBtn.style.display = "none";
         }
-        // Force Mint button to be visible initially if not connected (handled in init/logic) generally
-        // But for safety, let's just use the Mint button as the main logical entry.
+        // Force Mint button to be visible initially if not connected
         this.mintBtn.style.display = "block";
 
         this.mintBtn.onclick = () => this.handleMint();
@@ -70,7 +68,7 @@ export class Leaderboard {
         // Update UI
         this.loginError.textContent = "Loading Profile...";
 
-        if (this.useMock) {
+        if (this.mockDB) {
             // Mock login with wallet
             setTimeout(() => {
                 let storedUser = localStorage.getItem("mock_user_" + docId);
@@ -112,13 +110,11 @@ export class Leaderboard {
                 this.currentUser = newUser;
             }
 
-            // this.completeLogin(); // Do not auto-start. Wait for user to click START GAME.
-
         } catch (error) {
             console.error("Login failed:", error);
             this.loginError.textContent = "Error loading profile. Playing offline.";
             // Fallback to offline/mock
-            this.useMock = true;
+            this.mockDB = true;
             this.currentUser = {
                 wallet: address,
                 username: newUsername || "Offline Player",
@@ -127,7 +123,6 @@ export class Leaderboard {
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
-            // this.completeLogin();
         }
     }
 
@@ -157,13 +152,11 @@ export class Leaderboard {
                     this.loginError.textContent = "Wallet Connected! Enter username to Mint NFT.";
                     this.loginError.style.color = "var(--neon-yellow)";
                     this.mintBtn.style.display = "block";
-                    this.usernameInput.style.display = "block"; // Ensure visible
-                    this.startGameBtn.disabled = true; // Disable until minted
+                    this.usernameInput.style.display = "block";
+                    this.startGameBtn.disabled = true;
                 }
 
             } else {
-                // Auto connect returned null (not capable)
-                // Ensure Mint button is visible for manual connection
                 this.mintBtn.style.display = "block";
             }
         } catch (e) {
@@ -173,39 +166,6 @@ export class Leaderboard {
     }
 
     async handleWalletConnect(walletId) {
-        // Mock Mode Bypass
-        if (this.useMock) {
-            this.walletButtons.style.display = "none";
-            this.walletStatus.textContent = "Mock Wallet Connected";
-            this.walletStatus.style.color = "var(--neon-green)";
-
-            const mockAddress = "0x" + Math.random().toString(16).substr(2, 40);
-
-            // Check if we have "mock NFT"
-            const hasNft = localStorage.getItem("mock_nft_" + mockAddress) === "true";
-
-            if (hasNft) {
-                this.mintBtn.style.display = "none";
-                this.usernameInput.style.display = "none";
-                this.loginError.textContent = "Loading Mock Profile...";
-                this.loginError.style.color = "var(--neon-cyan)";
-                await this.loginWithWallet(mockAddress);
-                this.startGameBtn.disabled = false;
-                this.loginError.textContent = "READY TO PLAY (MOCK)";
-                this.loginError.style.color = "var(--neon-green)";
-                return true; // Return success
-            } else {
-                this.loginError.textContent = "Mock NFT Required! Create a username to mint.";
-                this.loginError.style.color = "var(--neon-pink)";
-                this.mintBtn.style.display = "block";
-                this.usernameInput.style.display = "inline-block";
-                this.startGameBtn.disabled = true;
-                // Store address for minting step
-                this.tempMockAddress = mockAddress;
-                return true; // Connected, proceed to mint
-            }
-        }
-
         if (!window.walletManager) return false;
 
         this.loginError.textContent = "";
@@ -262,14 +222,11 @@ export class Leaderboard {
 
     async handleMint() {
         // If not connected, connect first
-        if (!window.walletManager || (!window.walletManager.isConnected() && !this.useMock)) {
+        if (!window.walletManager || !window.walletManager.isConnected()) {
             console.log("Not connected, connecting first...");
             const connected = await this.handleWalletConnect("com.coinbase.wallet");
             if (!connected) return; // Stop if connection failed
 
-            // After connection, check if we still need to mint (might have ownership)
-            // handleWalletConnect updates UI and state. 
-            // If user already had NFT, mintBtn is hidden. We should check visibility/state.
             if (this.mintBtn.style.display === "none") return;
         }
 
@@ -284,7 +241,7 @@ export class Leaderboard {
 
         // 1. Check Uniqueness
         try {
-            if (!this.useMock) {
+            if (!this.mockDB) {
                 if (!db) throw new Error("Database not connected. Check .env");
                 const q = query(collection(db, "players"), where("username", "==", username));
                 const snapshot = await getDocs(q);
@@ -297,7 +254,7 @@ export class Leaderboard {
             }
         } catch (e) {
             console.error("Username check failed", e);
-            if (!this.useMock) {
+            if (!this.mockDB) {
                 // Show exact error
                 this.loginError.textContent = "Check Failed: " + (e.message || "Unknown");
                 this.mintBtn.disabled = false;
@@ -310,29 +267,20 @@ export class Leaderboard {
         try {
             let hasNft = false;
 
-            if (this.useMock) {
-                // Simulate minting delay
-                await new Promise(r => setTimeout(r, 1000));
-                if (this.tempMockAddress) {
-                    localStorage.setItem("mock_nft_" + this.tempMockAddress, "true");
-                    // Also use tempMockAddress for login
-                    window.mockWalletAddress = this.tempMockAddress;
-                }
-                hasNft = true;
-            } else {
-                await window.walletManager.mint();
+            // ALWAYS try real minting first unless we explicitly build a pure mock loop
+            // Since User wants transaction, we call walletManager.mint()
+            await window.walletManager.mint();
 
-                // Re-check
-                this.mintBtn.textContent = "Checking Access...";
-                hasNft = await window.walletManager.checkOwnership();
-            }
+            // Re-check
+            this.mintBtn.textContent = "Checking Access...";
+            hasNft = await window.walletManager.checkOwnership();
 
             if (hasNft) {
                 this.mintBtn.style.display = "none";
                 this.usernameInput.style.display = "none";
                 this.loginError.textContent = "Mint Successful! Loading Profile...";
                 this.loginError.style.color = "var(--neon-cyan)";
-                await this.loginWithWallet(this.useMock ? (window.mockWalletAddress || "0xMock") : window.walletManager.getAddress(), username);
+                await this.loginWithWallet(window.walletManager.getAddress(), username);
                 this.startGameBtn.disabled = false;
                 this.loginError.textContent = "Mint Success! READY TO PLAY";
                 this.loginError.style.color = "var(--neon-green)";
@@ -397,7 +345,7 @@ export class Leaderboard {
         li.textContent = "Loading...";
         this.list.appendChild(li);
 
-        if (this.useMock) {
+        if (this.mockDB) {
             this.mockFetchScores();
             return;
         }

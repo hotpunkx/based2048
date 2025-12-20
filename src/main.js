@@ -20,4 +20,12 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Game Init Error: " + e.message + "\n" + e.stack);
     }
   });
+  window.addEventListener("click", () => {
+    window.focus();
+  });
+
+  // Check if running in an iframe
+  if (window.self !== window.top) {
+    document.body.classList.add('is-embedded');
+  }
 });

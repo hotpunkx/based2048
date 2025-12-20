@@ -1,13 +1,13 @@
 {
-  "id": "based-meme-maker",
-  "name": "Based Meme Maker",
-  "short_name": "Meme Maker",
-  "description": "Create, customize and share memes instantly on Base.",
+  "id": "based-2048",
+  "name": "Based 2048",
+  "short_name": "Based 2048",
+  "description": "Play the classic 2048 game on Base.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "url": "https://mememinter.vercel.app/",
+  "url": "https://based2048.vercel.app/",
   "icons": [
     {
       "src": "/pwa-192x192.png",
