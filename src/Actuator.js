@@ -104,6 +104,8 @@ export class Actuator {
 
             this.scoreContainer.appendChild(addition);
         }
+
+        this.updateLevel(score);
     }
 
     updateBestScore(bestScore) {
@@ -126,6 +128,34 @@ export class Actuator {
     clearContainer(container) {
         while (container.firstChild) {
             container.removeChild(container.firstChild);
+        }
+    }
+
+    updateLevel(score) {
+        const POINTS_PER_LEVEL = 2000;
+        let level = Math.floor(score / POINTS_PER_LEVEL) + 1;
+        let progress = ((score % POINTS_PER_LEVEL) / POINTS_PER_LEVEL) * 100;
+
+        if (level >= 50) {
+            level = 50;
+            progress = 100;
+        }
+
+        const levelText = document.querySelector(".level-text");
+        const levelProgressText = document.querySelector(".level-progress-text");
+        const levelFill = document.querySelector(".level-fill");
+
+        if (levelText) levelText.textContent = "LEVEL " + level;
+        if (levelFill) levelFill.style.width = progress + "%";
+
+        if (levelProgressText) {
+            const nextLevelScore = level * POINTS_PER_LEVEL;
+            const currentLevelScore = score % POINTS_PER_LEVEL;
+            if (level >= 50) {
+                levelProgressText.textContent = "MAX LEVEL";
+            } else {
+                levelProgressText.textContent = Math.floor(currentLevelScore) + " / " + POINTS_PER_LEVEL;
+            }
         }
     }
 }

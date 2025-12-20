@@ -674,7 +674,52 @@ input,
 textarea {
   -webkit-user-select: text;
   user-select: text;
+  user-select: text;
   cursor: text;
+}
+
+/* Level System */
+.level-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.level-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 5px var(--neon-cyan);
+  font-weight: bold;
+}
+
+.level-bar {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--neon-blue);
+  border-radius: 5px;
+  box-shadow: 0 0 5px var(--neon-blue);
+  overflow: hidden;
+}
+
+.level-fill {
+  height: 100%;
+  background: var(--neon-pink);
+  box-shadow: 0 0 10px var(--neon-pink);
+  transition: width 0.3s ease-out;
+}
+
+/* Update for Mobile */
+@media screen and (max-width: 520px) {
+  .level-container {
+    margin-bottom: 15px;
+  }
+
+  .level-info {
+    font-size: 12px;
+  }
 }
 
 /* Embedded Mode Overrides */

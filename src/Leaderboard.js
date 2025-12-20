@@ -45,9 +45,14 @@ export class Leaderboard {
 
         this.startGameBtn.onclick = () => this.onStartGameClick();
 
-        // Enable start button when username is typed
+        // Enable start button when username is typed -- REMOVED to enforce NFT check
+        // this.usernameInput.addEventListener('input', (e) => {
+        //     this.startGameBtn.disabled = e.target.value.length < 3;
+        // });
+
+        // Update: Keep username input enabled for registration but do not enable start game
         this.usernameInput.addEventListener('input', (e) => {
-            this.startGameBtn.disabled = e.target.value.length < 3;
+            // Just validation visual if needed, but don't enable start button
         });
 
         // Wallet Buttons
@@ -299,19 +304,8 @@ export class Leaderboard {
 
     onStartGameClick() {
         if (!this.currentUser) {
-            // Guest Mode
-            const username = this.usernameInput.value.trim() || "Guest";
-            const guestId = "guest_" + Date.now().toString().slice(-6);
-            this.currentUser = {
-                wallet: guestId,
-                username: username,
-                bestScore: 0,
-                chain: "guest",
-                createdAt: new Date(),
-                updatedAt: new Date()
-            };
-            // Save guest session locally
-            localStorage.setItem("last_guest_session", JSON.stringify(this.currentUser));
+            this.loginError.textContent = "Please connect wallet and mint NFT to play.";
+            return;
         }
         if (this.currentUser) {
             this.completeLogin();
