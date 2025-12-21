@@ -1,48 +1,73 @@
-import { createWallet } from "thirdweb/wallets";
-import { base } from "thirdweb/chains";
-import { client } from "./thirdweb";
-import { getContract, sendTransaction } from "thirdweb";
-import { balanceOf, claimTo } from "thirdweb/extensions/erc721";
+import { createWalletClient, custom, createPublicClient, http, parseAbi } from 'viem';
+import { base } from 'viem/chains';
+
+const CONTRACT_ADDRESS = "0xB59C8cD194221645a8C8e8b2398C8Fa176A5EaE1";
+const MINIMAL_ABI = parseAbi([
+    "function balanceOf(address owner) view returns (uint256)",
+    "function mint() public"
+]);
 
 export class WalletManager {
     constructor() {
-        this.activeWallet = null;
+        this.walletClient = null;
+        this.publicClient = null;
         this.account = null;
-        this.chain = base;
-        this.listeners = [];
-        this.nftContractAddress = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
-        console.log("WalletManager Init. Contract Address:", this.nftContractAddress);
+        this.chainId = 8453; // Base Mainnet
+
+        // Event listeners
+        this.onAccountChange = null;
     }
 
-    onAddressChanged(callback) {
-        this.listeners.push(callback);
-    }
+    async init() {
+        if (!window.ethereum) return false;
 
-    notifyListeners() {
-        this.listeners.forEach(cb => cb(this.account ? this.account.address : null));
-    }
+        this.walletClient = createWalletClient({
+            chain: base,
+            transport: custom(window.ethereum)
+        });
 
-    async connect(walletId) {
-        try {
-            const wallet = createWallet(walletId);
+        this.publicClient = createPublicClient({
+            chain: base,
+            transport: http()
+        });
 
-            // Connect to the wallet
-            // For injected wallets like MetaMask, this triggers the popup
-            this.account = await wallet.connect({
-                client: client,
-                chain: this.chain, // Request connection to Base directly
-            });
-
-            this.activeWallet = wallet;
-
-            // Check chain and switch if necessary (though connect({chain}) usually handles it)
-            const chainId = wallet.getChain()?.id;
-            if (chainId && chainId !== this.chain.id) {
-                await this.switchNetwork();
+        // Setup listeners
+        window.ethereum.on('accountsChanged', (accounts) => {
+            if (accounts.length > 0) {
+                this.account = accounts[0];
+                if (this.onAccountChange) this.onAccountChange(this.account);
+            } else {
+                this.account = null;
+                if (this.onAccountChange) this.onAccountChange(null);
             }
+        });
 
-            console.log("Connected:", this.account.address);
-            this.notifyListeners();
+        window.ethereum.on('chainChanged', () => window.location.reload());
+
+        // Auto-connect attempt
+        try {
+            const accounts = await this.walletClient.requestAddresses();
+            if (accounts.length > 0) {
+                this.account = accounts[0];
+                await this.checkNetwork();
+                return this.account;
+            }
+        } catch (e) {
+            console.log("Auto-connect failed/rejected");
+        }
+        return null;
+    }
+
+    async connect() {
+        if (!window.ethereum) {
+            alert("No wallet found. Please install Coinbase Wallet or MetaMask.");
+            return null;
+        }
+
+        try {
+            const accounts = await this.walletClient.requestAddresses();
+            this.account = accounts[0];
+            await this.checkNetwork();
             return this.account;
         } catch (error) {
             console.error("Connection failed:", error);
@@ -50,115 +75,64 @@ export class WalletManager {
         }
     }
 
-    async autoConnect() {
-        try {
-            // Guard: Only auto-connect if an injected provider is present (e.g. Base App, explicit extension).
-            if (typeof window !== "undefined" && !window.ethereum && !window.coinbaseWalletExtension) {
-                console.log("No injected wallet found, skipping auto-connect to prevent QR modal.");
-                return null;
-            }
-
-            // Priority: Coinbase Wallet (Smart Wallet) for Base App
-            const wallet = createWallet("com.coinbase.wallet");
-
-            this.account = await wallet.connect({
-                client: client,
-                chain: this.chain,
-            });
-
-            this.activeWallet = wallet;
-
-            // Check chain
-            const chainId = wallet.getChain()?.id;
-            if (chainId && chainId !== this.chain.id) {
-                await this.switchNetwork();
-            }
-
-            console.log("Auto-Connected:", this.account.address);
-            this.notifyListeners();
-            return this.account;
-        } catch (error) {
-            // Auto-connect failed
-            console.log("Auto-connect skipped or failed:", error);
-            return null;
-        }
-    }
-
-    async getContract() {
-        if (!this.nftContractAddress) {
-            console.error("NFT Contract Address not set!");
-            return null;
-        }
-        return getContract({
-            client,
-            chain: this.chain,
-            address: this.nftContractAddress,
-        });
-    }
-
-    async checkOwnership() {
-        if (!this.account) return false;
-
-        try {
-            const contract = await this.getContract();
-            if (!contract) {
-                console.error("No contract address found. Gating is strict: Access Denied.");
-                return false;
-            }
-
-            const balance = await balanceOf({
-                contract,
-                owner: this.account.address,
-            });
-
-            return balance > 0n;
-        } catch (error) {
-            console.error("Failed to check ownership:", error);
-            return false;
-        }
-    }
-
-    async mint() {
-        if (!this.account) return;
-        try {
-            const contract = await this.getContract();
-            if (!contract) throw new Error("Contract not configured");
-
-            const transaction = claimTo({
-                contract,
-                to: this.account.address,
-                quantity: 1n,
-            });
-
-            // Send transaction
-            const { transactionHash } = await sendTransaction({
-                transaction,
-                account: this.account,
-            });
-
-            console.log("Minted:", transactionHash);
-            return transactionHash;
-        } catch (error) {
-            console.error("Mint failed:", error);
-            throw error;
+    async checkNetwork() {
+        if (!window.ethereum) return;
+        const chainId = await this.walletClient.getChainId();
+        if (chainId !== this.chainId) {
+            await this.switchNetwork();
         }
     }
 
     async switchNetwork() {
-        if (!this.activeWallet) return;
         try {
-            await this.activeWallet.switchChain(this.chain);
+            await this.walletClient.switchChain({ id: this.chainId });
         } catch (error) {
-            console.error("Failed to switch network:", error);
-            throw error;
+            if (error.code === 4902) {
+                await this.walletClient.addChain({ chain: base });
+            } else {
+                throw error;
+            }
         }
     }
 
-    getAddress() {
-        return this.account ? this.account.address : null;
+    getAccount() {
+        return this.account;
     }
 
-    isConnected() {
-        return !!this.account;
+    // --- NFT Logic ---
+
+    async checkOwnership(address) {
+        if (!this.publicClient || !address) return false;
+        try {
+            const balance = await this.publicClient.readContract({
+                address: CONTRACT_ADDRESS,
+                abi: MINIMAL_ABI,
+                functionName: 'balanceOf',
+                args: [address]
+            });
+            return balance > 0n;
+        } catch (error) {
+            console.error("Ownership check failed:", error);
+            return false;
+        }
+    }
+
+    async mintNft() {
+        if (!this.walletClient || !this.account) throw new Error("Wallet not connected");
+
+        // Ensure network is correct before transaction
+        await this.checkNetwork();
+
+        const hash = await this.walletClient.writeContract({
+            address: CONTRACT_ADDRESS,
+            abi: MINIMAL_ABI,
+            functionName: 'mint',
+            account: this.account,
+            chain: base
+        });
+
+        return hash;
     }
 }
+
+export const walletManager = new WalletManager();
