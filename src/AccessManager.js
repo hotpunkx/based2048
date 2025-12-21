@@ -1,6 +1,6 @@
 import { walletManager } from "./WalletManager";
 
-export class Leaderboard {
+export class AccessManager {
     constructor(gameInstance) {
         this.game = gameInstance;
         // Re-purposing existing DOM elements for Gating UI, ignoring Leaderboard specific ones
@@ -44,7 +44,6 @@ export class Leaderboard {
         this.walletStatus.textContent = "Not Connected";
         this.walletStatus.style.color = "#fff";
         this.mintContainer.style.display = "none";
-        // this.usernameInput.style.display = "none"; // Removed
         this.startGameBtn.disabled = true;
         this.hasNft = false;
 
@@ -192,8 +191,4 @@ export class Leaderboard {
             this.game.setup(0);
         }
     }
-
-    // No-ops for old calls if any remain
-    fetchScores() { }
-    submitScore() { }
 }

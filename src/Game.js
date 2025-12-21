@@ -87,12 +87,7 @@ export class Game {
         });
 
         if (this.over) {
-            // Simple check to avoid spamming. In a real app, check against high score.
-            setTimeout(() => {
-                if (this.score > 0) {
-                    window.leaderboard.submitScore(this.score);
-                }
-            }, 1000);
+            console.log("Game Over");
         }
     }
 

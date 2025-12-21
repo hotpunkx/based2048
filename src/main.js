@@ -2,7 +2,7 @@ import './style.css'
 import { Game } from './Game.js'
 import { InputManager } from './InputManager.js'
 import { Actuator } from './Actuator.js'
-import { Leaderboard } from './Leaderboard.js'
+import { AccessManager } from './AccessManager.js'
 
 // Wait for the DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", () => {
@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       console.log("Initializing Game...");
       const game = new Game(4, InputManager, Actuator);
-      window.leaderboard = new Leaderboard(game);
+      window.accessManager = new AccessManager(game);
       console.log("Initialization Complete");
     } catch (e) {
       console.error("Init Error:", e);
