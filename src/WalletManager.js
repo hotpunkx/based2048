@@ -123,15 +123,25 @@ export class WalletManager {
         // Ensure network is correct before transaction
         await this.checkNetwork();
 
-        const hash = await this.walletClient.writeContract({
+        console.log("Minting with:", {
             address: CONTRACT_ADDRESS,
-            abi: MINIMAL_ABI,
-            functionName: 'mint',
             account: this.account,
-            chain: base
+            chain: base.id
         });
 
-        return hash;
+        try {
+            const hash = await this.walletClient.writeContract({
+                address: CONTRACT_ADDRESS,
+                abi: MINIMAL_ABI,
+                functionName: 'mint',
+                account: this.account,
+                chain: base
+            });
+            return hash;
+        } catch (error) {
+            console.error("Minting Error Detailed:", error);
+            throw error;
+        }
     }
 }
 

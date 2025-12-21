@@ -220,7 +220,7 @@ export class Leaderboard {
             if (error.cause?.code === 4001 || error.message?.includes("rejected")) {
                 this.loginError.textContent = "Transaction cancelled by user.";
             } else {
-                this.loginError.textContent = "Mint failed. Check console.";
+                this.loginError.textContent = "Mint failed: " + (error.message || "Unknown error");
             }
 
             this.mintBtn.textContent = "TRY AGAIN";
