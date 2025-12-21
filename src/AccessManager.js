@@ -86,7 +86,11 @@ export class AccessManager {
     }
 
     bindEvents() {
-        this.startGameBtn.onclick = () => this.onStartGameClick();
+        this.startGameBtn.addEventListener("click", () => this.onStartGameClick());
+        this.startGameBtn.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            this.onStartGameClick();
+        });
 
         // Wallet Buttons
         if (this.connectCoinbaseBtn) {
@@ -158,6 +162,7 @@ export class AccessManager {
             this.loginError.textContent = `Minting... Verifying (${attempts})...`;
             const owned = await walletManager.checkOwnership(account);
             if (owned) {
+                this.hasNft = true;
                 this.loginError.textContent = "Mint Verified! Ready to Play.";
                 this.mintContainer.style.display = "none";
                 this.prepareGameStart();
